@@ -11,21 +11,21 @@ class ConnectionPool:
     def __init__(self):
         self.min_conn = 1
         self.max_conn = 5
-        # self.pool = psycopg2.pool.SimpleConnectionPool(self.min_conn, self.max_conn,
-        #                                                database="jexlvuum",
-        #                                                user="jexlvuum",
-        #                                                password="Ck7EFGjj1TJDMXuyNErlslxnj-ZeOSMT",
-        #                                                host="rain.db.elephantsql.com",
-        #                                                port="5432")
-        self.pool = psycopg2.pool.SimpleConnectionPool(
-            self.min_conn, 
-            self.max_conn,
-            database=os.getenv('DB_NAME'),
-            user=os.getenv('DB_USER'),
-            password=os.getenv('DB_PASSWORD'),
-            host=os.getenv('DB_HOST'),
-            port=os.getenv('DB_PORT')
-        )
+        self.pool = psycopg2.pool.SimpleConnectionPool(self.min_conn, self.max_conn,
+                                                       database="jexlvuum",
+                                                       user="jexlvuum",
+                                                       password="Ck7EFGjj1TJDMXuyNErlslxnj-ZeOSMT",
+                                                       host="rain.db.elephantsql.com",
+                                                       port="5432")
+        # self.pool = psycopg2.pool.SimpleConnectionPool(
+        #     self.min_conn, 
+        #     self.max_conn,
+        #     database=os.getenv('DB_NAME'),
+        #     user=os.getenv('DB_USER'),
+        #     password=os.getenv('DB_PASSWORD'),
+        #     host=os.getenv('DB_HOST'),
+        #     port=os.getenv('DB_PORT')
+        # )
 
     def get_connection(self):
         return self.pool.getconn()
