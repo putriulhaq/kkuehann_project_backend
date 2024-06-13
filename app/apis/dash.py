@@ -126,3 +126,40 @@ class LastOrder(Resource):
             if conn is not None:
                 pool.return_connection(conn)
     
+@dash.route("/bar-chart")
+class BarChart(Resource):
+    def get(self):
+        conn = pool.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                '''
+               select
+                    array_agg(count_) as count_array,
+                    array_agg(menu_name) as menu_name_array
+                from
+                    (
+                        select
+                            count(quantity) as count_,
+                            o.menu_id,
+                            m.menu_name
+                        from
+                            "order" o
+                        join menu m on
+                            m.menu_id = o.menu_id
+                        group by
+                            o.menu_id,
+                            m.menu_name
+                    ) as sub
+                ''') 
+            res = cur.fetchall()
+            cur.close()
+            return jsonify(res)
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
+    
