@@ -1,31 +1,27 @@
+import os
 import psycopg2.pool
 import atexit
 from dotenv import load_dotenv
-import os
 
 pool = None 
 
-print(os.getenv('DB_NAME'))
 
 class ConnectionPool:
     def __init__(self):
         self.min_conn = 1
         self.max_conn = 5
-        self.pool = psycopg2.pool.SimpleConnectionPool(self.min_conn, self.max_conn,
-                                                       database="jexlvuum",
-                                                       user="jexlvuum",
-                                                       password="Ck7EFGjj1TJDMXuyNErlslxnj-ZeOSMT",
-                                                       host="rain.db.elephantsql.com",
-                                                       port="5432")
-        # self.pool = psycopg2.pool.SimpleConnectionPool(
-        #     self.min_conn, 
-        #     self.max_conn,
-        #     database=os.getenv('DB_NAME'),
-        #     user=os.getenv('DB_USER'),
-        #     password=os.getenv('DB_PASSWORD'),
-        #     host=os.getenv('DB_HOST'),
-        #     port=os.getenv('DB_PORT')
-        # )
+        try:
+            self.pool = psycopg2.pool.SimpleConnectionPool(
+                self.min_conn, 
+                self.max_conn,
+                database=os.getenv('DB_NAME'),
+                user=os.getenv('DB_USER'),
+                password=os.getenv('DB_PASSWORD'),
+                host=os.getenv('DB_HOST'),
+                port=os.getenv('DB_PORT')
+            )
+        except psycopg2.OperationalError as e:
+            print(f"Failed to connect to database: {e}")
 
     def get_connection(self):
         return self.pool.getconn()

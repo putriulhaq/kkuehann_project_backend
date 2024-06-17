@@ -55,7 +55,7 @@ class Transaction(Resource):
                         transaction_type, 
                         transaction_status, 
                         transaction_to, 
-                        description
+                        decscription
                     )
                     VALUES
                     (

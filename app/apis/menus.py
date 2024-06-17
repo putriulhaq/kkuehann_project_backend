@@ -2,28 +2,23 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, c
 import psycopg2 
 from flask_restx import Namespace, Resource, reqparse
 from .db import pool
+from psycopg2.extras import DictCursor
 
-# Inisialisasi pool koneksi
-# pool = ConnectionPool()
-
-# Mendapatkan koneksi dari pool
-# conn = pool.get_connection()
-# pool = current_app.config.pool
 
 menus = Namespace("menus", description= "Menus's APIS Namespace")
 
-# menusArgs = reqparse.ArgumentParser()
-# # menusArgs.add_argument('rate', type=int, help='Rate cannot be converted')
-# menusArgs.add_argument('manu_name', type=str,)
-# menusArgs.add_argument('description', type=str,)
-# menusArgs.add_argument('pricelist', type=str,)
+menusArgs = reqparse.RequestParser()
+# menusArgs.add_argument('rate', type=int, help='Rate cannot be converted')
+menusArgs.add_argument('menu_name', type=str,)
+menusArgs.add_argument('description', type=str,)
+menusArgs.add_argument('priceist', type=str,)
 
 @menus.route("")
 class Menus(Resource):
     # @menus.expect(menusArgs)
     def get(self):
         conn = pool.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=DictCursor)
         try:
             cur.execute(
                 '''
@@ -31,10 +26,13 @@ class Menus(Resource):
                 ''') 
             res = cur.fetchall()
             cur.close()
-            # # conn.close()
-            # pool.return_connection(conn)
-            # pool.close_all_connections()
-            return jsonify(res)
+            result = []
+            for row in res:
+                transformed_row = {"menu_id": row["menu_id"], "menu_name": row["menu_name"], "pricelist": row["priceist"]}
+                result.append(transformed_row)
+
+            return jsonify(result) 
+            # return jsonify()
         except Exception as e:
                 return {"error": str(e)}, 500
         finally:
@@ -43,38 +41,35 @@ class Menus(Resource):
             if conn is not None:
                 pool.return_connection(conn)
     
+    @menus.expect(menusArgs)
     def post(self):
         conn = pool.get_connection()
         cur = conn.cursor()
-        # args = menusArgs.parser_args()
+        args = menusArgs.parse_args()
         try:
             cur.execute(
-                '''
-                    INSERT into menus
+                """
+                    INSERT into menu
                     (
-                        menu_name, 
+                        menu_name,
                         description, 
                         is_deleted, 
                         created_at, 
-                        pricelist
+                        priceist
                     )
-                    values 
+                    VALUES 
                     (
-                        %s, 
-                        %s,
+                        %(menu_name)s, 
+                        %(description)s,
                         '001002', 
                         'now()', 
-                        %s,
+                        %(priceist)s
                     )
-                '''
+                    """, 
+                args
                 ) 
-            # res = cur.fetchall()
-            # cur.close()
             conn.commit()
-            # conn.close()
-            pool.return_connection(conn)
-            pool.close_all_connections()
-            return jsonify("success")
+            return jsonify({"status": "success"})
         except Exception as e:
                 return {"error": str(e)}, 500
         finally:

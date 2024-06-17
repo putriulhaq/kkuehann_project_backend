@@ -1,6 +1,7 @@
 # app.py
 import sys
 import os
+from flask_cors import CORS
 
 # Tambahkan direktori 'apis' ke dalam sys.path
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -24,6 +25,7 @@ import pkgutil
 
 app = Flask(__name__) 
 api = Api(app)
+CORS(app)
 
 
 # Mendaftarkan namespace users
