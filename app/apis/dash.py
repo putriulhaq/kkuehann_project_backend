@@ -82,11 +82,11 @@ class LastOrder(Resource):
         try:
             cur.execute(
                 '''
-                with menu_pricelist as (
+               with menu_pricelist as (
                 select
                     m.menu_id,
                     menu_name,
-                    cast(m.pricelist as integer) as pricelist
+                    cast(m.priceist as integer) as priceist
                 from
                     menu m
                 ),
@@ -94,16 +94,16 @@ class LastOrder(Resource):
                 select
                     mp.menu_name,   
                     count(o.menu_id) as order_menu,
-                    mp.pricelist,
-                    count(o.menu_id) * mp.pricelist as total_price,
-                    AVG(count(o.menu_id) * mp.pricelist) OVER () AS average_total_price
+                    mp.priceist,
+                    count(o.menu_id) * mp.priceist as total_price,
+                    AVG(count(o.menu_id) * mp.priceist) OVER () AS average_total_price
                 from
                     "order" o
                 join menu_pricelist mp on
                     mp.menu_id = o.menu_id
                 group by
                     mp.menu_name,
-                    mp.pricelist,
+                    mp.priceist,
                     mp.menu_id 
                 )
                 select
@@ -163,3 +163,59 @@ class BarChart(Resource):
             if conn is not None:
                 pool.return_connection(conn)
     
+@dash.route("/card-information")
+class CardCustomer(Resource):
+    def get(self):
+        conn = pool.get_connection()
+        cur = conn.cursor()
+        try:
+            result = []
+            
+            # Execute the first query to get the total number of customers
+            cur.execute('''SELECT COUNT(customer_id) AS total_cust FROM customer''')
+            total_customer = cur.fetchone()[0]
+            result.append({
+                'total': total_customer,
+                'name': 'Customer',
+                'desc': 'Total Customer per Month'
+            })
+
+            # Execute the second query to get the total number of orders
+            cur.execute('''SELECT COUNT(order_detail_id) AS total_order FROM order_detail''')
+            total_order = cur.fetchone()[0]
+            result.append({
+                'total': total_order,
+                'name': 'Order',
+                'desc': 'Total Order per Month'
+            })
+
+            # Execute the third query to get the total number of orders by status
+            cur.execute('''
+                SELECT order_status, COUNT(order_status) as total_order_status, code_value(order_status, 'eng') as order_status_desc
+                FROM order_detail
+                GROUP BY order_status
+            ''')
+            total_order_status = cur.fetchall()
+            
+            # Append each status result separately
+            for row in total_order_status:
+                result.append({
+                    'total': row[1],
+                    'name': row[2],
+                    'desc': 'Total Order Status per Month',
+                    'icon': "ri-checkbox-circle-line",
+                    'color': "success",
+                    'width': "70"
+                })
+
+            return jsonify(result)
+        
+        except Exception as e:
+            return {"error": str(e)}, 500
+        
+        finally:
+            # Ensure the cursor and connection are properly closed
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
