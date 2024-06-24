@@ -4,6 +4,7 @@ from flask_restx import Namespace, Resource, reqparse
 import argparse
 from .db import pool
 from psycopg2.extras import DictCursor
+from datetime import datetime
 
 
 order = Namespace("order", description= "Menus's APIS Namespace")
@@ -41,55 +42,103 @@ class Order(Resource):
         pool.return_connection(conn)
         pool.close_all_connections()
         return jsonify(res)
+
+    # orderArgs.add_argument('rate', type=int, help='Rate cannot be converted')
+    orderArgs.add_argument('cust_name', type=str)
+    orderArgs.add_argument('address', type=str)
+    orderArgs.add_argument('no_tlp', type=str)
+    orderArgs.add_argument('order_to', type=str)
+    orderArgs.add_argument('description', type=str) 
+    orderArgs.add_argument('orderItems', type=list) 
+    orderArgs.add_argument('req_date_order', type=str, location='json') 
     
-    # @transaction.expect(transactionArgs)
+    @order.expect(orderArgs)
     def post(self):
         conn = pool.get_connection()
         cur = conn.cursor()
-        # args = transactionArgs.parse_args()
-        # print(args)
-        cur.execute(
+        data = request.json
+        args = orderArgs.parse_args()
+        order_items = data.get('orderItems', [])
+        order_data = {
+            'cust_name': args['cust_name'],
+            'address': args['address'],
+            'address_order': args['address'],  # Set address_order sama dengan address
+            'no_tlp': args['no_tlp'],
+            'order_to': args['order_to'],
+            'description': args['description'],
+            'req_date_order': args['req_date_order'],
+            'orderItems': order_items
+        }
+        print(order_data)
+        
+        try:
+            # Insert customer and return customer_id
+            cur.execute(
                 """
-                WITH cust AS (
-                        INSERT INTO public."customer" (cust_name, address, no_tlp)
-                        VALUES ('Ulhaq', 'Pancoran', '081280583884')
-                        RETURNING customer_id
-                    ),
-                    -- Insert into the order_detail table using the customer_id from the previous step and get the order_detail_id
-                    detail_order AS (
-                        INSERT INTO public.order_detail (customer_id, upd_date_order, req_date_order, address_order, created_at)
-                        SELECT customer_id, NOW(), NOW(), 'Paris', NOW()
-                        FROM cust
-                        RETURNING order_detail_id
-                    ),
-                    -- Insert into the order table using the order_detail_id from the previous step and get the order_detail_id
-                    order_insert AS (
-                        INSERT INTO public."order" (order_detail_id, menu_id, quantity, order_status)
-                        SELECT order_detail_id, 1, 2, '002001'
-                        FROM detail_order
-                        RETURNING order_detail_id
-                    )
-                    -- Insert into the transaction table using the order_detail_id from the previous step
-                    INSERT INTO public."transaction" (
-                        transaction_id,
-                        transaction_type,
-                        transaction_status,
-                        transaction_to,
-                        order_detail_id
-                    )
-                    SELECT 
-                        NEXTVAL('transaction_id_seq'), -- Assuming you have a sequence for transaction_id
-                        '002001', -- Replace with actual transaction type
-                        '003001', -- Replace with actual transaction status
-                        '004001', -- Replace with actual transaction to
-                        order_detail_id
-                    FROM order_insert;
+                INSERT INTO public."customer" (cust_name, address, no_tlp)
+                VALUES (%s, %s, %s)
+                RETURNING customer_id
                 """,
+                (
+                    order_data['cust_name'],
+                    order_data['address'],
+                    order_data['no_tlp']
+                )
             )
-        conn.commit()
-        pool.return_connection(conn)
-        # pool.close_all_connections()
-        return jsonify({"status": "success"})
+            customer_id = cur.fetchone()[0]
+            
+            # Insert order detail and return order_detail_id
+            cur.execute(
+                """
+                INSERT INTO public.order_detail (customer_id, upd_date_order, req_date_order, address_order, created_at)
+                VALUES (%s, NOW(), %s, %s, NOW())
+                RETURNING order_detail_id
+                """,
+                (
+                    customer_id,
+                    order_data['req_date_order'],
+                    order_data['address_order']
+                )
+            )
+            order_detail_id = cur.fetchone()[0]
+            
+            # Loop through orderItems and insert each one into the order table
+            for item in order_items:
+                cur.execute(
+                    """
+                    INSERT INTO public."order" (order_detail_id, menu_id, quantity, order_status)
+                    VALUES (%s, %s, %s, '002001')
+                    """,
+                    (
+                        order_detail_id,
+                        item['menu_id'],
+                        item['quantity']
+                    )
+                )
+            
+            # Insert into the transaction table
+            cur.execute(
+                """
+                INSERT INTO public."transaction" (
+                    transaction_id, transaction_type, transaction_status, transaction_to, order_detail_id
+                )
+                VALUES (
+                    NEXTVAL('transaction_id_seq'), '002001', '003001', '004001', %s
+                )
+                """,
+                (order_detail_id,)
+            )
+            
+            conn.commit()
+            return jsonify({"status": "success"})
+        
+        except Exception as e:
+            conn.rollback()
+            return jsonify({"status": "error", "message": str(e)}), 500
+        
+        finally:
+            pool.return_connection(conn)
+
 
 @order.route('/latest-order')
 class LatestOrder(Resource):
@@ -129,6 +178,7 @@ class LatestOrder(Resource):
                 join "transaction" t on
                     t.order_detail_id = od.order_detail_id
                 join total_price tp on tp.order_detail_id = od.order_detail_id
+                
                 '''
             )
             res = cur.fetchall()
