@@ -23,25 +23,35 @@ class Order(Resource):
             print('succes')
         else:
             print('nope')
-        conn = pool.get_connection()
-        cur = conn.cursor()
-        cur.execute(
-            '''
-                select
-                    od.*
-                from
-                    "order" o
-                join "order_detail" od on
-                    o.order_id = od.order_id
-                join transaction t on t.transaction_id = od. transaction_id
-                join customer c on c.customer_id = od.customer_id
-            ''') 
-        res = cur.fetchall()
-        cur.close()
-
-        pool.return_connection(conn)
-        pool.close_all_connections()
-        return jsonify(res)
+        conn = pool.get_connection() 
+        cur = conn.cursor(cursor_factory=DictCursor)
+        try:
+            cur.execute(
+                '''
+                    select
+                        distinct on
+                        (order_detail_id)
+                        od.*,
+                        c.*,
+                        code_value(od.order_status, 'eng') as order_status_name
+                    from
+                        "order" o
+                    join "order_detail" od on
+                        o.order_detail_id = od.order_detail_id
+                    join transaction t on
+                        t.order_detail_id = od.order_detail_id
+                        join customer c on c.customer_id = od.customer_id
+                ''') 
+            rows = cur.fetchall()
+            res = [dict(row) for row in rows]
+            return jsonify(res)
+        except Exception as e:
+            return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
 
     # orderArgs.add_argument('rate', type=int, help='Rate cannot be converted')
     orderArgs.add_argument('cust_name', type=str)
@@ -145,6 +155,7 @@ class LatestOrder(Resource):
     def get(self):
         if pool:
             print('succes')
+            print('yaa')
         else:
             print('nope')
         conn = pool.get_connection()
@@ -162,7 +173,7 @@ class LatestOrder(Resource):
                 left join menu m on m.menu_id = o.menu_id
                 group by order_detail_id, o.menu_id, o.order_detail_id, o.quantity, m.priceist
                 )
-                select
+                select distinct on (od.order_detail_id)
                     c.cust_name,
                     od.req_date_order,
                     tp.total,
