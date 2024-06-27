@@ -25,8 +25,7 @@ import pkgutil
 
 app = Flask(__name__) 
 api = Api(app)
-CORS(app)
-
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Mendaftarkan namespace users
 api.add_namespace(users, path='/users')

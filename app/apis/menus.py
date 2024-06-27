@@ -1,8 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, current_app, Blueprint
 import psycopg2 
 from flask_restx import Namespace, Resource, reqparse
+import argparse
 from .db import pool
 from psycopg2.extras import DictCursor
+from datetime import datetime
 
 
 menus = Namespace("menus", description= "Menus's APIS Namespace")
@@ -22,7 +24,7 @@ class Menus(Resource):
         try:
             cur.execute(
                 '''
-                    SELECT * FROM menu
+                    SELECT * FROM menu where is_deleted = '001002'
                 ''') 
             res = cur.fetchall()
             cur.close()
@@ -46,6 +48,7 @@ class Menus(Resource):
         conn = pool.get_connection()
         cur = conn.cursor()
         args = menusArgs.parse_args()
+        print(args)
         try:
             cur.execute(
                 """
@@ -70,6 +73,64 @@ class Menus(Resource):
                 ) 
             conn.commit()
             return jsonify({"status": "success"})
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
+    
+    # @menus.expect(menusArgs)
+@menus.route("/<int:menu_id>")
+class DeleteMenu(Resource):
+    def put(self, menu_id):
+        conn = pool.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                   update
+                        public.menu
+                    set
+                        is_deleted = '001001'
+                    where
+                        menu_id = %s
+                    """, 
+                (menu_id,)
+                ) 
+            conn.commit()
+            return jsonify({"status": "success"})
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
+
+    def get(self, menu_id):
+        conn = pool.get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        try:
+            cur.execute(
+                '''
+                    SELECT * FROM menu where is_deleted = '001002' AND menu_id = %s
+                ''',(menu_id,)) 
+            res = cur.fetchone()
+            cur.close()
+            # result = []
+            if res:  # Check if res is not None
+                transformed_row = {
+                    "menu_id": res["menu_id"],
+                    "menu_name": res["menu_name"],
+                    "pricelist": res["priceist"],
+                    "description": res["description"]
+                }
+                return jsonify(transformed_row)
+            else:
+                return jsonify({})  # Return empty object if no data found
+            # return jsonify()
         except Exception as e:
                 return {"error": str(e)}, 500
         finally:
