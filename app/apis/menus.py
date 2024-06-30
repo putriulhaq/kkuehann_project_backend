@@ -48,7 +48,6 @@ class Menus(Resource):
         conn = pool.get_connection()
         cur = conn.cursor()
         args = menusArgs.parse_args()
-        print(args)
         try:
             cur.execute(
                 """
@@ -131,6 +130,38 @@ class DeleteMenu(Resource):
             else:
                 return jsonify({})  # Return empty object if no data found
             # return jsonify()
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
+    
+@menus.expect(menusArgs)
+@menus.route("/update/<int:menu_id>")
+class UpdatedMenu(Resource):
+    def put(self, menu_id):
+        conn = pool.get_connection()
+        cur = conn.cursor()
+        args = menusArgs.parse_args()
+        print(args['menu_name'])
+        try:
+            cur.execute(
+                """
+                   update
+                        public.menu
+                    set
+                        priceist = %s,
+                        description = %s,
+                        menu_name = %s
+                    where
+                        menu_id = %s
+                    """, 
+                (args['priceist'], args['description'], args['menu_name'], menu_id,)
+                ) 
+            conn.commit()
+            return jsonify({"status": "success"})
         except Exception as e:
                 return {"error": str(e)}, 500
         finally:
