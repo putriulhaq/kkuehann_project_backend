@@ -29,21 +29,23 @@ class Transaction(Resource):
                 '''
                     SELECT 
                         t.transaction_id,
-                        code_value(t.transaction_type, 'eng') as transaction_type,
-                        code_value(t.transaction_status, 'eng') as transaction_status,
-                        code_value(t.transaction_to, 'eng') as transaction_to,
+                        t.transaction_type,
+                        t.transaction_status,
+                        t.transaction_to,
+                        code_value(t.transaction_type, 'eng') as transaction_type_name,
+                        code_value(t.transaction_status, 'eng') as transaction_status_name,
+                        code_value(t.transaction_to, 'eng') as transaction_to_name,
                         t.decscription as description,
-                        od.*,
-                        c.*
+                        c.cust_name
                     FROM transaction t
-                    LEFT JOIN order_detail od on od.transaction_id = t.transaction_id
-                    LEFT JOIN customer c on c.customer_id = od.customer_id
+                    JOIN order_detail od on od.order_detail_id = t.order_detail_id
+                    JOIN customer c on c.customer_id = od.customer_id
                 ''') 
             res = cur.fetchall()
 
             result = []
             for row in res:
-                transformed_row = {"transaction_id": row["transaction_id"], "transaction_status": row["transaction_status"], "transaction_type": row["transaction_type"], "transaction_to": row["transaction_to"], "description": row["description"]}
+                transformed_row = {"transaction_id": row["transaction_id"], "transaction_status": row["transaction_status"], "transaction_type": row["transaction_type"], "transaction_to": row["transaction_to"], "description": row["description"], "cust_name": row["cust_name"]}
                 result.append(transformed_row)
                 
             return jsonify(result)
