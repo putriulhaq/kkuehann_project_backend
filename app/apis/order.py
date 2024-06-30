@@ -10,11 +10,6 @@ from datetime import datetime
 order = Namespace("order", description= "Menus's APIS Namespace")
 
 orderArgs = reqparse.RequestParser()
-# orderArgs.add_argument('rate', type=int, help='Rate cannot be converted')
-# orderArgs.add_argument('order_type', type=str,)
-# orderArgs.add_argument('order_status', type=str,)
-# orderArgs.add_argument('order_to', type=str,)
-# orderArgs.add_argument('description', type=str,)
 
 @order.route("")
 class Order(Resource):
@@ -208,6 +203,39 @@ class LatestOrder(Resource):
                 pool.return_connection(conn)
 
 
-
-
-    
+editStatusArgs = reqparse.RequestParser()
+editStatusArgs.add_argument('address_order', type=str)
+editStatusArgs.add_argument('order_status', type=str)
+@order.expect(editStatusArgs)
+@order.route('/edit-status/<string:order_detail_id>')
+class orderStatus(Resource):
+    def put(self, order_detail_id):
+        if pool:
+            print('succes')
+            print('yaa')
+        else:
+            print('nope')
+        conn = pool.get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        args = editStatusArgs.parse_args()
+        try:
+            cur.execute(
+                """
+                update 
+                    order_detail 
+                set 
+                    order_status = %s,
+                    address_order = %s
+                where order_detail_id = %s            
+                """,
+                (args['order_status'], args['address_order'], order_detail_id,)
+            )
+            conn.commit()
+            return jsonify({"status": "success"})
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
