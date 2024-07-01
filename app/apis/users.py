@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, current_app, Blueprint
 import psycopg2 
 from flask_restx import Namespace, Resource
-from db import pool
+from .db import pool
 
 # Inisialisasi pool koneksi
 # pool = ConnectionPool()
