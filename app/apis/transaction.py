@@ -36,7 +36,8 @@ class Transaction(Resource):
                         code_value(t.transaction_status, 'eng') as transaction_status_name,
                         code_value(t.transaction_to, 'eng') as transaction_to_name,
                         t.decscription as description,
-                        c.cust_name
+                        c.cust_name,
+                        od.order_detail_id
                     FROM transaction t
                     JOIN order_detail od on od.order_detail_id = t.order_detail_id
                     JOIN customer c on c.customer_id = od.customer_id
@@ -45,7 +46,18 @@ class Transaction(Resource):
 
             result = []
             for row in res:
-                transformed_row = {"transaction_id": row["transaction_id"], "transaction_status": row["transaction_status"], "transaction_type": row["transaction_type"], "transaction_to": row["transaction_to"], "description": row["description"], "cust_name": row["cust_name"]}
+                transformed_row = {
+                                   "transaction_id": row["transaction_id"], 
+                                   "transaction_status": row["transaction_status"], 
+                                   "transaction_type": row["transaction_type"], 
+                                   "transaction_to": row["transaction_to"], 
+                                   "description": row["description"], 
+                                   "cust_name": row["cust_name"],
+                                   "transaction_type_name": row["transaction_type_name"],
+                                   "transaction_status_name": row["transaction_status_name"],
+                                   "transaction_to_name": row["transaction_to_name"],                               
+                                   "order_detail_id": row["order_detail_id"]                                   
+                                   }
                 result.append(transformed_row)
                 
             return jsonify(result)
@@ -92,5 +104,38 @@ class Transaction(Resource):
             if conn is not None:
                 pool.return_connection(conn)
 
-        
-    
+@transaction.expect(transactionArgs)       
+@transaction.route('/edit-transaction/<int:order_detail_id>')
+class TransactionStatus(Resource):
+    def put(self, order_detail_id):
+        if pool:
+            print('succes')
+        else:
+            print('nope')
+        conn = pool.get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        args = transactionArgs.parse_args()
+        print(args)
+        try:
+            cur.execute(
+                """
+                update 
+                    transaction 
+                set 
+                    transaction_type = %s,
+                    transaction_status = %s,
+                    transaction_to = %s
+                where 
+                    order_detail_id = %s            
+                """,
+                (args['transaction_type'], args['transaction_status'], args['transaction_to'], order_detail_id,)
+            )
+            conn.commit()
+            return jsonify({"status": "success"})
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)

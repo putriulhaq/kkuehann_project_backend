@@ -5,14 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python Debugger: Flask",
-      "type": "debugpy",
+      "name": "Kkuehann",
+      "type": "python",
       "request": "launch",
       "module": "flask",
       "env": { "FLASK_APP": "app\\__init__.py", "FLASK_DEBUG": "true" },
-      "args": ["run", "--no-debugger", "--no-reload"],
+      "args": ["run"],
       "jinja": true,
-      "autoStartBrowser": false
+      "autoStartBrowser": true
     }
   ]
 }

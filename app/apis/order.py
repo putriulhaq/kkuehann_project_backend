@@ -184,7 +184,6 @@ class LatestOrder(Resource):
                 join "transaction" t on
                     t.order_detail_id = od.order_detail_id
                 join total_price tp on tp.order_detail_id = od.order_detail_id
-                
                 '''
             )
             res = cur.fetchall()
@@ -207,7 +206,7 @@ editStatusArgs = reqparse.RequestParser()
 editStatusArgs.add_argument('address_order', type=str)
 editStatusArgs.add_argument('order_status', type=str)
 @order.expect(editStatusArgs)
-@order.route('/edit-status/<string:order_detail_id>')
+@order.route('/edit-status/<int:order_detail_id>')
 class orderStatus(Resource):
     def put(self, order_detail_id):
         if pool:
