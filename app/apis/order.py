@@ -158,39 +158,40 @@ class LatestOrder(Resource):
         try: 
             cur.execute(
                 '''
-                with total_price as (
-                select 
-                    o.menu_id, 
-                    o.quantity,
-                    o.order_detail_id,
-                    count(o.quantity) * cast(m.priceist as integer) as total
-                from "order" o 
-                left join menu m on m.menu_id = o.menu_id
-                group by order_detail_id, o.menu_id, o.order_detail_id, o.quantity, m.priceist
-                )
-                select distinct on (od.order_detail_id)
-                    c.cust_name,
-                    od.req_date_order,
-                    tp.total,
-                    o.order_detail_id,
-                    tp.quantity,
-                    code_value(o.order_status, 'eng') as order_status
-                from
-                    order_detail od
-                join "order" o on
-                    o.order_detail_id = od.order_detail_id
-                join "customer" c on
-                    c.customer_id = od.customer_id
-                join "transaction" t on
-                    t.order_detail_id = od.order_detail_id
-                join total_price tp on tp.order_detail_id = od.order_detail_id
+                with total_price as 
+                (
+                    select
+                        o.order_detail_id,
+                        SUM(m.pricelist * o.quantity) as order_total
+                    from
+                        menu m
+                    join "order" o on
+                        o.menu_id = m.menu_id
+                    where
+                        m.is_deleted = '001002'
+                    group by
+                        o.order_detail_id
+                ) 
+                    select
+                        c.cust_name,
+                        od.req_date_order,
+                        tp.order_total as total,
+                        od.order_detail_id,
+                        code_value(od.order_status, 'eng') as order_status,
+                        code_value(t.transaction_status , 'eng') as transaction_status
+                    from
+                        order_detail od
+                    join total_price tp on
+                        tp.order_detail_id = od.order_detail_id
+                    join customer c on c.customer_id = od.customer_id 
+                    left join "transaction" t on t.order_detail_id  = od.order_detail_id  
                 '''
             )
             res = cur.fetchall()
 
             result = []
             for row in res:
-                transformed_row = {"quantity": row["quantity"], "order_detail_id": row["order_detail_id"], "cust_name": row["cust_name"], "req_date_order": row["req_date_order"], "total": row["total"], "order_status": row["order_status"]}
+                transformed_row = {"order_detail_id": row["order_detail_id"], "cust_name": row["cust_name"], "req_date_order": row["req_date_order"], "total": row["total"], "order_status": row["order_status"], "transaction_status": row["transaction_status"]}
                 result.append(transformed_row)
             return jsonify(result)
         except Exception as e:
