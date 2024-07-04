@@ -57,7 +57,7 @@ class Menus(Resource):
                         description, 
                         is_deleted, 
                         created_at, 
-                        priceist
+                        pricelist
                     )
                     VALUES 
                     (

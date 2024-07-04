@@ -36,6 +36,8 @@ class Order(Resource):
                     join transaction t on
                         t.order_detail_id = od.order_detail_id
                         join customer c on c.customer_id = od.customer_id
+                    where od.is_deleted = '001002' 
+                    order by od.order_detail_id desc
                 ''') 
             rows = cur.fetchall()
             res = [dict(row) for row in rows]
@@ -184,7 +186,9 @@ class LatestOrder(Resource):
                     join total_price tp on
                         tp.order_detail_id = od.order_detail_id
                     join customer c on c.customer_id = od.customer_id 
-                    left join "transaction" t on t.order_detail_id  = od.order_detail_id  
+                    join "transaction" t on t.order_detail_id  = od.order_detail_id  
+                    where  od.is_deleted = '001002'
+                    limit 5
                 '''
             )
             res = cur.fetchall()

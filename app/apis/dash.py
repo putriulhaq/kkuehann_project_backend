@@ -172,7 +172,7 @@ class CardCustomer(Resource):
             result = []
             
             # Execute the first query to get the total number of customers
-            cur.execute('''SELECT COUNT(customer_id) AS total_cust FROM customer''')
+            cur.execute('''SELECT COUNT(customer_id) AS total_cust FROM customer where customer.is_deleted = '001002' ''')
             total_customer = cur.fetchone()[0]
             result.append({
                 'total': total_customer,
@@ -181,7 +181,7 @@ class CardCustomer(Resource):
             })
 
             # Execute the second query to get the total number of orders
-            cur.execute('''SELECT COUNT(order_detail_id) AS total_order FROM order_detail''')
+            cur.execute('''SELECT COUNT(order_detail_id) AS total_order FROM order_detail where order_detail.is_deleted = '001002' ''')
             total_order = cur.fetchone()[0]
             result.append({
                 'total': total_order,
@@ -193,6 +193,7 @@ class CardCustomer(Resource):
             cur.execute('''
                 SELECT order_status, COUNT(order_status) as total_order_status, code_value(order_status, 'eng') as order_status_desc
                 FROM order_detail
+                where order_detail.is_deleted = '001002'
                 GROUP BY order_status
             ''')
             total_order_status = cur.fetchall()
