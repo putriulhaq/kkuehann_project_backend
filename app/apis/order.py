@@ -23,29 +23,46 @@ class Order(Resource):
         try:
             cur.execute(
                 '''
-                    select
-                        distinct on
-                        (od.order_detail_id)
-                        c.*,
-                        od.*,
-                        code_value(od.order_status,
-                        'eng') as order_status_name,
-                        array_agg(m.menu_name) as menu,
-                        array_agg(o.quantity) as quantity 
-                    from
-                        "order" o
-                    join "order_detail" od on
-                        o.order_detail_id = od.order_detail_id
-                    join transaction t on
-                        t.order_detail_id = od.order_detail_id
-                    join customer c on
-                        c.customer_id = od.customer_id
-                    join menu m on m.menu_id = o.menu_id
-                    where
-                        od.is_deleted = '001002'
-                    group by od.order_detail_id, c.customer_id 
-                    order by
-                        od.order_detail_id desc
+                    with total_price as 
+                        (
+                            select
+                                o.order_detail_id,
+                                SUM(m.pricelist * o.quantity) as order_total
+                            from
+                                menu m
+                            join "order" o on
+                                o.menu_id = m.menu_id
+                            where m.is_deleted = '001002'
+                            group by o.order_detail_id
+                        ) 
+                            select distinct on (od.order_detail_id)
+                                c.*,
+                                od.*,
+                                code_value(od.order_status,
+                                'eng') as order_status_name,
+                                array_agg(m.menu_name) as menu,
+                                array_agg(o.quantity) as quantity,
+                                tp.order_total as total
+                            from
+                                "order" o
+                            join "order_detail" od on
+                                o.order_detail_id = od.order_detail_id
+                            join total_price tp on
+                                tp.order_detail_id = od.order_detail_id
+                            join transaction t on
+                                t.order_detail_id = od.order_detail_id
+                            join customer c on
+                                c.customer_id = od.customer_id
+                            join menu m on
+                                m.menu_id = o.menu_id
+                            where
+                                od.is_deleted = '001002'
+                            group by
+                                od.order_detail_id,
+                                c.customer_id,
+                                tp.order_total
+                            order by
+                                od.order_detail_id desc
                 ''') 
             rows = cur.fetchall()
             res = [dict(row) for row in rows]
