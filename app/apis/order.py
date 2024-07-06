@@ -25,19 +25,27 @@ class Order(Resource):
                 '''
                     select
                         distinct on
-                        (order_detail_id)
-                        od.*,
+                        (od.order_detail_id)
                         c.*,
-                        code_value(od.order_status, 'eng') as order_status_name
+                        od.*,
+                        code_value(od.order_status,
+                        'eng') as order_status_name,
+                        array_agg(m.menu_name) as menu,
+                        array_agg(o.quantity) as quantity 
                     from
                         "order" o
                     join "order_detail" od on
                         o.order_detail_id = od.order_detail_id
                     join transaction t on
                         t.order_detail_id = od.order_detail_id
-                        join customer c on c.customer_id = od.customer_id
-                    where od.is_deleted = '001002' 
-                    order by od.order_detail_id desc
+                    join customer c on
+                        c.customer_id = od.customer_id
+                    join menu m on m.menu_id = o.menu_id
+                    where
+                        od.is_deleted = '001002'
+                    group by od.order_detail_id, c.customer_id 
+                    order by
+                        od.order_detail_id desc
                 ''') 
             rows = cur.fetchall()
             res = [dict(row) for row in rows]
@@ -234,6 +242,45 @@ class orderStatus(Resource):
                 """,
                 (args['order_status'], args['address_order'], order_detail_id,)
             )
+            conn.commit()
+            return jsonify({"status": "success"})
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
+
+@order.route("/delete-order/<int:order_detail_id>")
+class DeleteOrder(Resource):
+    def put(self, order_detail_id):
+        conn = pool.get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(
+                """
+                   update
+                        public.order_detail
+                    set
+                        is_deleted = '001001'
+                    where
+                        order_detail_id = %s
+                    """, 
+                (order_detail_id,)
+                ) 
+            
+            cur.execute(
+                """
+                   update
+                        public.transaction
+                    set
+                        is_deleted = '001001'
+                    where
+                        order_detail_id = %s
+                    """, 
+                (order_detail_id,)
+                ) 
             conn.commit()
             return jsonify({"status": "success"})
         except Exception as e:

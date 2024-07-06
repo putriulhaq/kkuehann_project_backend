@@ -41,6 +41,8 @@ class Transaction(Resource):
                     FROM transaction t
                     JOIN order_detail od on od.order_detail_id = t.order_detail_id
                     JOIN customer c on c.customer_id = od.customer_id
+                    WHERE t.is_deleted = '001002'
+                    order by transaction_id desc
                 ''') 
             res = cur.fetchall()
 
