@@ -82,6 +82,10 @@ class Order(Resource):
     orderArgs.add_argument('order_to', type=str)
     orderArgs.add_argument('description', type=str) 
     orderArgs.add_argument('orderItems', type=list) 
+    orderArgs.add_argument('deliveryType', type=str) 
+    orderArgs.add_argument('deliveryStatus', type=str) 
+    orderArgs.add_argument('transactionType', type=str) 
+    orderArgs.add_argument('transactionStatus', type=str) 
     orderArgs.add_argument('req_date_order', type=str, location='json') 
     
     @order.expect(orderArgs)
@@ -99,6 +103,10 @@ class Order(Resource):
             'order_to': args['order_to'],
             'description': args['description'],
             'req_date_order': args['req_date_order'],
+            'delivery_type': args['deliveryType'],
+            'delivery_status': args['deliveryStatus'],
+            'transaction_type': args['transactionType'],
+            'transaction_status': args['transactionStatus'],
             'orderItems': order_items
         }
         print(order_data)
@@ -155,10 +163,22 @@ class Order(Resource):
                     transaction_id, transaction_type, transaction_status, transaction_to, order_detail_id
                 )
                 VALUES (
-                    NEXTVAL('transaction_id_seq'), '002001', '003001', '004001', %s
+                    NEXTVAL('transaction_id_seq'), %s, %s, '004001', %s
                 )
                 """,
-                (order_detail_id,)
+                (order_data['transaction_type'], order_data['transaction_status'], order_detail_id,)
+            )
+            # Insert into the delivery table
+            cur.execute(
+                """
+                INSERT INTO public."delivery" (
+                   delivery_status, delivery_type, order_detail_id
+                )
+                VALUES (
+                   %s,  %s , %s
+                )
+                """,
+                (order_data['delivery_status'], order_data['delivery_type'], order_detail_id,)
             )
             
             conn.commit()

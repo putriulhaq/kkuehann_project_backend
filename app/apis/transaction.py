@@ -32,6 +32,7 @@ class Transaction(Resource):
                         t.transaction_type,
                         t.transaction_status,
                         t.transaction_to,
+                        t.updated_time,
                         code_value(t.transaction_type, 'eng') as transaction_type_name,
                         code_value(t.transaction_status, 'eng') as transaction_status_name,
                         code_value(t.transaction_to, 'eng') as transaction_to_name,
