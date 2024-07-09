@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify, c
 import psycopg2 
 from flask_restx import Namespace, Resource, reqparse
 from .db import pool
+from psycopg2.extras import DictCursor
 
 dash = Namespace("dashboard", description= "Dashboard's APIS Namespace")
 
@@ -220,3 +221,34 @@ class CardCustomer(Resource):
                 cur.close()
             if conn is not None:
                 pool.return_connection(conn)
+
+@dash.route("/notification")
+class Notification(Resource):
+    # @menus.expect(menusArgs)
+    def get(self):
+        conn = pool.get_connection()
+        cur = conn.cursor(cursor_factory=DictCursor)
+        try:
+            cur.execute(
+                '''
+                    SELECT lg.message, c.cust_name, lg.created_at::date, log_order_id
+                    FROM log_order lg join order_detail od on od.order_detail_id = lg.order_detail_id 
+                    join customer c on c.customer_id = od.customer_id limit 5 
+                ''') 
+            res = cur.fetchall()
+            cur.close()
+            result = []
+            for row in res:
+                transformed_row = {"log_order_id": row["log_order_id"], "message": row["message"], "created_at": row["created_at"], "cust_name": row["cust_name"]}
+                result.append(transformed_row)
+
+            return jsonify(result) 
+            # return jsonify()
+        except Exception as e:
+                return {"error": str(e)}, 500
+        finally:
+            if cur is not None:
+                cur.close()
+            if conn is not None:
+                pool.return_connection(conn)
+    

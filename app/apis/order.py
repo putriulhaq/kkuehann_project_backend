@@ -180,6 +180,20 @@ class Order(Resource):
                 """,
                 (order_data['delivery_status'], order_data['delivery_type'], order_detail_id,)
             )
+
+
+            message = 'New order from {}, lets Check for details!'.format(order_data['cust_name'])
+            cur.execute(
+                """
+                INSERT
+                    into public.log_order (
+                    message, order_detail_id
+                )
+                VALUES (%s, %s);
+
+                """,
+                (message, order_detail_id,)
+            )
             
             conn.commit()
             return jsonify({"status": "success"})
@@ -233,6 +247,7 @@ class LatestOrder(Resource):
                     join customer c on c.customer_id = od.customer_id 
                     join "transaction" t on t.order_detail_id  = od.order_detail_id  
                     where  od.is_deleted = '001002'
+                    order by od.upd_date_order  desc
                     limit 5
                 '''
             )
