@@ -26,6 +26,7 @@ def create_app():
     from .apis.menus import menus
     from .apis.transaction import transaction
     from .apis.order import order
+    from .apis.delivery import delivery
     # from apis.dashboard import dashboard
     import pkgutil
 
@@ -35,7 +36,8 @@ def create_app():
     api.add_namespace(menus, path='/menus')
     api.add_namespace(transaction, path='/transaction')
     api.add_namespace(dash, path='/dash')
-    api.add_namespace(order, path='/order')
+    api.add_namespace(order, path='/order') 
+    api.add_namespace(delivery, path='/delivery') 
 
     return app
 

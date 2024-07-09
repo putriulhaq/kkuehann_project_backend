@@ -118,7 +118,6 @@ class TransactionStatus(Resource):
         conn = pool.get_connection()
         cur = conn.cursor(cursor_factory=DictCursor)
         args = transactionArgs.parse_args()
-        print(args)
         try:
             cur.execute(
                 """
@@ -132,6 +131,32 @@ class TransactionStatus(Resource):
                     order_detail_id = %s            
                 """,
                 (args['transaction_type'], args['transaction_status'], args['transaction_to'], order_detail_id,)
+            )
+            conn.commit()
+
+            cur.execute(
+                """
+                select 
+                    c.cust_name
+                from order_detail od join customer c on c.customer_id = od.customer_id
+                where 
+                    order_detail_id = %s     
+                """,
+                (order_detail_id,)
+            )
+
+            cust_name = cur.fetchone()[0]
+            message = 'Update transaction from {}'.format(cust_name)
+            cur.execute(
+                """
+                INSERT
+                    into public.log_order (
+                    message, order_detail_id
+                )
+                VALUES (%s, %s);
+
+                """,
+                (message, order_detail_id,)
             )
             conn.commit()
             return jsonify({"status": "success"})

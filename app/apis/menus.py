@@ -30,7 +30,7 @@ class Menus(Resource):
             cur.close()
             result = []
             for row in res:
-                transformed_row = {"menu_id": row["menu_id"], "menu_name": row["menu_name"], "pricelist": row["priceist"], "description": row["description"]}
+                transformed_row = {"menu_id": row["menu_id"], "menu_name": row["menu_name"], "pricelist": row["pricelist"], "description": row["description"]}
                 result.append(transformed_row)
 
             return jsonify(result) 

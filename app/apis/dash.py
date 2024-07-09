@@ -47,7 +47,7 @@ class LastOrder(Resource):
 class LastOrder(Resource):
     def get(self):
         conn = pool.get_connection()
-        cur = conn.cursor()
+        cur = conn.cursor(cursor_factory=DictCursor)
         try:
             cur.execute(
                 '''
@@ -63,10 +63,15 @@ class LastOrder(Resource):
                     m.menu_name
                 order by
                     order_count desc
+                limit 3
                 ''') 
             res = cur.fetchall()
             cur.close()
-            return jsonify(res)
+            result = []
+            for row in res:
+                transformed_row = {"menu_name": row["menu_name"], "order_count": row["order_count"]}
+                result.append(transformed_row)
+            return jsonify(result)
         except Exception as e:
                 return {"error": str(e)}, 500
         finally:
@@ -233,7 +238,7 @@ class Notification(Resource):
                 '''
                     SELECT lg.message, c.cust_name, lg.created_at::date, log_order_id
                     FROM log_order lg join order_detail od on od.order_detail_id = lg.order_detail_id 
-                    join customer c on c.customer_id = od.customer_id limit 5 
+                    join customer c on c.customer_id = od.customer_id order by log_order_id desc limit 4
                 ''') 
             res = cur.fetchall()
             cur.close()
