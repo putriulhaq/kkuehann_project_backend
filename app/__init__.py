@@ -45,10 +45,10 @@ def create_app():
         return send_from_directory(os.path.join(app.root_path, 'static'),
                                    'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-    handler = app
     return app
 
 if __name__ == "__main__":
     app = create_app()
+    handler = app
     app.run(debug=True)
     # list_modules('apis.db')
