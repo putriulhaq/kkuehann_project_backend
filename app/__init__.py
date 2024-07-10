@@ -47,9 +47,8 @@ def create_app():
 
     return app
 
-    return app
-
 if __name__ == "__main__":
     app = create_app()
+    handler = app
     app.run(debug=True)
     # list_modules('apis.db')
