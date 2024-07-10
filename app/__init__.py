@@ -52,7 +52,12 @@ def create_app():
     return app
     
 app = create_app()
-handler = app
+# Handler untuk Vercel
+try:
+    handler = app
+except NameError:
+    handler = None
+    print("Error: 'app' variable is not defined.")
 
 if __name__ == "__main__":
     app.run(debug=True)
