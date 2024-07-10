@@ -50,9 +50,9 @@ def create_app():
         return jsonify({"message": "Hello World"}), 200
 
     return app
+    
+app = create_app()
+handler = app
 
 if __name__ == "__main__":
-    app = create_app()
-    handler = app
     app.run(debug=True)
-    # list_modules('apis.db')
