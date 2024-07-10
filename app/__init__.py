@@ -2,7 +2,7 @@
 import sys
 import os
 from flask_cors import CORS
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_restx import Api, Resource
 
 
@@ -38,6 +38,14 @@ def create_app():
     api.add_namespace(dash, path='/dash')
     api.add_namespace(order, path='/order') 
     api.add_namespace(delivery, path='/delivery') 
+
+     # Route untuk favicon.ico
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_from_directory(os.path.join(app.root_path, 'static'),
+                                   'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
+    return app
 
     return app
 
