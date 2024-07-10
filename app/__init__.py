@@ -2,7 +2,7 @@
 import sys
 import os
 from flask_cors import CORS
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 from flask_restx import Api, Resource
 
 
@@ -44,6 +44,10 @@ def create_app():
     def favicon():
         return send_from_directory(os.path.join(app.root_path, 'static'),
                                    'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    
+    @app.route('/')
+    def hello_world():
+        return jsonify({"message": "Hello World"}), 200
 
     return app
 
