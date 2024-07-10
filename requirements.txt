@@ -2,3 +2,4 @@ Flask
 flask-restx
 psycopg2-binary 
 python-dotenv
+flask-cors
